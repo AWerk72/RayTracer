@@ -2,6 +2,8 @@ package RayTracer;
 
 import java.io.File;
 import java.io.IOException;
+import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -14,8 +16,10 @@ import javax.sound.sampled.Line;
 public class Main {
 
     public static void main(String[] args) {
+        // #3
         loadObj("teapot.obj");
 
+        // #9
         Point3D cameraPosition = new Point3D(0, 0, 5);
         Point3D screenCenter = new Point3D(0, 0, 0);
         Point3D screenUp = new Point3D(0, 1, 0);
@@ -55,6 +59,33 @@ public class Main {
             System.out.println();
         }
 
+        // #10
+        // 10. Output Screen Pixels as an Image
+        // Create BufferedImage to store image
+        BufferedImage image = new BufferedImage(imageWidth, imageHeight, BufferedImage.TYPE_INT_RGB);
+
+        // Set pixel intensities to image
+        for (int y = 0; y < imageHeight; y++) {
+            for (int x = 0; x < imageWidth; x++) {
+                // Normalize intensity to RGB range (0-255)
+                int intensity = (int) (pixelIntensities.get(y).get(x) * 255);
+
+                // Set pixel color
+                int rgb = (intensity << 16) | (intensity << 8) | intensity;
+                image.setRGB(x, y, rgb);
+            }
+        }
+
+        // Output image to file
+        File outputFile = new File("output.png");
+        try {
+            ImageIO.write(image, "png", outputFile);
+            System.out.println("Image saved successfully.");
+        } catch (IOException e) {
+            System.err.println("Error saving image: " + e.getMessage());
+        }
+
+        // #3
         for (Face face : faces) {
             for (int i = 0; i < face.vertexIndices.length; i++) {
                 Vertex vertex = vertices.get(face.vertexIndices[i]);
@@ -63,6 +94,7 @@ public class Main {
             System.out.println();
         }
 
+        // #4
         Point3D p1 = new Point3D(0, 0, 0);
         Point3D p2 = new Point3D(1, 0, 0);
         Point3D p3 = new Point3D(0, 1, 0);
