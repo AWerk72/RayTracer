@@ -1,4 +1,5 @@
 package RayTracer;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -10,10 +11,15 @@ import java.util.List;
 
 import javax.sound.sampled.Line;
 
-public class main {
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Main {
 
     public static void main(String[] args) {
-        // #3
         loadObj("teapot.obj");
 
         for (Face face : faces) {
@@ -24,7 +30,6 @@ public class main {
             System.out.println();
         }
 
-        // #4
         Point3D p1 = new Point3D(0, 0, 0);
         Point3D p2 = new Point3D(1, 0, 0);
         Point3D p3 = new Point3D(0, 1, 0);
@@ -36,36 +41,13 @@ public class main {
 
         boolean isIntersecting = isIntersecting(line, triangle);
         System.out.println("Is intersecting: " + isIntersecting);
+
+        List<Face> intersectingFaces = intersectingFaces(line);
+        System.out.println("Intersecting Faces: " + intersectingFaces);
     }
 
-    // Load OBJ File
-    public static void setup(){
-
-        try{
-            //OBJ file
-        }catch{ IOException ioe}
-    }
-
-    class Vertex {
-        public float x, y, z;
-
-        public Vertex(float x, float y, float z) {
-            this.x = x;
-            this.y = y;
-            this.z = z;
-        }
-    }
-
-    class Face {
-        public int[] vertexIndices;
-
-        public Face(int[] vertexIndices) {
-            this.vertexIndices = vertexIndices;
-        }
-    }
-
-    public static List<Vertex> vertices = new ArrayList<>();
-    public static List<Face> faces = new ArrayList<>();
+    static List<Vertex> vertices = new ArrayList<>();
+    static List<Face> faces = new ArrayList<>();
 
     public static void loadObj(String filename) {
         try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
@@ -91,6 +73,114 @@ public class main {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    static class Vertex {
+        public float x, y, z;
+
+        public Vertex(float x, float y, float z) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+    }
+
+    static class Face {
+        public int[] vertexIndices;
+
+        public Face(int[] vertexIndices) {
+            this.vertexIndices = vertexIndices;
+        }
+    }
+
+    static class Point3D {
+        double x, y, z;
+
+        public Point3D(double x, double y, double z) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+    }
+
+    static class Triangle {
+        Point3D p1, p2, p3;
+
+        public Triangle(Point3D p1, Point3D p2, Point3D p3) {
+            this.p1 = p1;
+            this.p2 = p2;
+            this.p3 = p3;
+        }
+    }
+
+    static class Line {
+        Point3D origin, direction;
+
+        public Line(Point3D origin, Point3D direction) {
+            this.origin = origin;
+            this.direction = direction;
+        }
+    }
+
+    // 4. Determine whether a Line and a Triangle Intersect in 3D
+
+    public static boolean isIntersecting(Line line, Triangle triangle) {
+        Point3D e1 = subtract(triangle.p2, triangle.p1);
+        Point3D e2 = subtract(triangle.p3, triangle.p1);
+        Point3D h = crossProduct(line.direction, e2);
+        double a = dotProduct(e1, h);
+
+        if (a > -0.00001 && a < 0.00001)
+            return false;
+
+        double f = 1.0 / a;
+        Point3D s = subtract(line.origin, triangle.p1);
+        double u = f * dotProduct(s, h);
+
+        if (u < 0.0 || u > 1.0)
+            return false;
+
+        Point3D q = crossProduct(s, e1);
+        double v = f * dotProduct(line.direction, q);
+
+        if (v < 0.0 || u + v > 1.0)
+            return false;
+
+        double t = f * dotProduct(e2, q);
+
+        return t > 0.00001;
+    }
+
+    private static Point3D subtract(Point3D a, Point3D b) {
+        return new Point3D(a.x - b.x, a.y - b.y, a.z - b.z);
+    }
+
+    private static double dotProduct(Point3D a, Point3D b) {
+        return a.x * b.x + a.y * b.y + a.z * b.z;
+    }
+
+    private static Point3D crossProduct(Point3D a, Point3D b) {
+        double x = a.y * b.z - a.z * b.y;
+        double y = a.z * b.x - a.x * b.z;
+        double z = a.x * b.y - a.y * b.x;
+        return new Point3D(x, y, z);
+    }
+
+    // 5. Determine Which Faces from an OBJ File a Given Line Intersects With in 3D
+
+    public static List<Face> intersectingFaces(Line line) {
+        List<Face> intersecting = new ArrayList<>();
+        for (Face face : faces) {
+            // Assume each face is a triangle
+            Point3D p1 = vertices.get(face.vertexIndices[0]);
+            Point3D p2 = vertices.get(face.vertexIndices[1]);
+            Point3D p3 = vertices.get(face.vertexIndices[2]);
+            Triangle triangle = new Triangle(p1, p2, p3);
+            if (isIntersecting(line, triangle)) {
+                intersecting.add(face);
+            }
+        }
+        return intersecting;
     }
 
     // 2. Compute Absolute Value
@@ -143,80 +233,6 @@ public class main {
         return distance;
     }
 
-    // 4. Determine whether a Line and a Triangle Intersect in 3D
-
-    static class Point3D {
-        double x, y, z;
-
-        public Point3D(double x, double y, double z) {
-            this.x = x;
-            this.y = y;
-            this.z = z;
-        }
-    }
-
-    static class Triangle {
-        Point3D p1, p2, p3;
-
-        public Triangle(Point3D p1, Point3D p2, Point3D p3) {
-            this.p1 = p1;
-            this.p2 = p2;
-            this.p3 = p3;
-        }
-    }
-
-    static class Line {
-        Point3D origin, direction;
-
-        public Line(Point3D origin, Point3D direction) {
-            this.origin = origin;
-            this.direction = direction;
-        }
-    }
-
-    public static boolean isIntersecting(Line line, Triangle triangle) {
-        Point3D e1 = subtract(triangle.p2, triangle.p1);
-        Point3D e2 = subtract(triangle.p3, triangle.p1);
-        Point3D h = crossProduct(line.direction, e2);
-        double a = dotProduct(e1, h);
-
-        if (a > -0.00001 && a < 0.00001)
-            return false;
-
-        double f = 1.0 / a;
-        Point3D s = subtract(line.origin, triangle.p1);
-        double u = f * dotProduct(s, h);
-
-        if (u < 0.0 || u > 1.0)
-            return false;
-
-        Point3D q = crossProduct(s, e1);
-        double v = f * dotProduct(line.direction, q);
-
-        if (v < 0.0 || u + v > 1.0)
-            return false;
-
-        double t = f * dotProduct(e2, q);
-
-        return t > 0.00001;
-    }
-
-    private static Point3D subtract(Point3D a, Point3D b) {
-        return new Point3D(a.x - b.x, a.y - b.y, a.z - b.z);
-    }
-
-    private static double dotProduct(Point3D a, Point3D b) {
-        return a.x * b.x + a.y * b.y + a.z * b.z;
-    }
-
-    private static Point3D crossProduct(Point3D a, Point3D b) {
-        double x = a.y * b.z - a.z * b.y;
-        double y = a.z * b.x - a.x * b.z;
-        double z = a.x * b.y - a.y * b.x;
-        return new Point3D(x, y, z);
-    }
-
-    // 5. Determine Which Faces from an OBJ File a Given Line Intersects With in 3D
     // 6. Compute the Normal of a Triangle in 3D
 
     // 7. Compute the Angle between Two Lines in 3D
