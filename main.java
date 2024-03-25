@@ -11,16 +11,49 @@ import java.util.List;
 
 import javax.sound.sampled.Line;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 public class Main {
 
     public static void main(String[] args) {
         loadObj("teapot.obj");
+
+        Point3D cameraPosition = new Point3D(0, 0, 5);
+        Point3D screenCenter = new Point3D(0, 0, 0);
+        Point3D screenUp = new Point3D(0, 1, 0);
+        double screenWidth = 4.0;
+        double screenHeight = 3.0;
+        int imageWidth = 800;
+        int imageHeight = 600;
+
+        // Initialize screen pixels
+        double pixelWidth = screenWidth / imageWidth;
+        double pixelHeight = screenHeight / imageHeight;
+        List<List<Double>> pixelIntensities = new ArrayList<>();
+        for (int y = 0; y < imageHeight; y++) {
+            List<Double> rowIntensities = new ArrayList<>();
+            for (int x = 0; x < imageWidth; x++) {
+                // Calculate ray direction for current pixel
+                double screenX = (x - imageWidth / 2.0) * pixelWidth;
+                double screenY = (y - imageHeight / 2.0) * pixelHeight;
+                Point3D screenPoint = new Point3D(screenX, screenY, 0);
+                Point3D rayDirection = subtract(screenPoint, cameraPosition).normalize();
+
+                // Trace ray and calculate illumination intensity
+                Line ray = new Line(cameraPosition, rayDirection);
+                double intensity = traceRay(ray);
+
+                // Store intensity for current pixel
+                rowIntensities.add(intensity);
+            }
+            pixelIntensities.add(rowIntensities);
+        }
+
+        // Print out pixel intensities
+        for (int y = 0; y < imageHeight; y++) {
+            for (int x = 0; x < imageWidth; x++) {
+                System.out.print(pixelIntensities.get(y).get(x) + " ");
+            }
+            System.out.println();
+        }
 
         for (Face face : faces) {
             for (int i = 0; i < face.vertexIndices.length; i++) {
@@ -239,6 +272,31 @@ public class Main {
     // 8. Compute the Illumination for a Triangle in 3D
     // 9. Raytrace an OBJ in 3D to Identify Illumination Intensities over a Screen
     // of Pixels in 2D
+
+    public static double traceRay(Line ray) {
+        // Initialize intensity
+        double intensity = 0.0;
+
+        // Check intersections with OBJ geometry
+        for (Face face : faces) {
+            // Convert face vertices to Point3D objects
+            Point3D p1 = vertices.get(face.vertexIndices[0]);
+            Point3D p2 = vertices.get(face.vertexIndices[1]);
+            Point3D p3 = vertices.get(face.vertexIndices[2]);
+
+            // Create triangle from face vertices
+            Triangle triangle = new Triangle(p1, p2, p3);
+
+            // Check if ray intersects with the triangle
+            if (isIntersecting(ray, triangle)) {
+                // For simplicity, assume constant intensity for intersected triangles
+                intensity += 1.0;
+            }
+        }
+
+        return intensity;
+    }
+
     // 10. Output Screen Pixels as an Image
 
 }
