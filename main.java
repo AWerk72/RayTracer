@@ -1,5 +1,6 @@
 package RayTracer;
 
+import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.awt.image.BufferedImage;
@@ -13,7 +14,7 @@ import java.util.List;
 
 import javax.sound.sampled.Line;
 
-public class Main {
+public class main {
 
     public static void main(String[] args) {
         // #3
@@ -166,6 +167,15 @@ public class Main {
             this.y = y;
             this.z = z;
         }
+
+        Point3D normalize() {
+            double magnitude = Math.sqrt(x * x + y * y + z * z);
+            if (magnitude == 0) {
+                return new Point3D(0, 0, 0);
+            }
+            return new Point3D(x / magnitude, y / magnitude, z / magnitude);
+        }
+
     }
 
     static class Triangle {
@@ -237,9 +247,13 @@ public class Main {
         List<Face> intersecting = new ArrayList<>();
         for (Face face : faces) {
             // Assume each face is a triangle
-            Point3D p1 = vertices.get(face.vertexIndices[0]);
-            Point3D p2 = vertices.get(face.vertexIndices[1]);
-            Point3D p3 = vertices.get(face.vertexIndices[2]);
+//            Point3D p1 = vertices.get(face.vertexIndices[0]);
+//            Point3D p2 = vertices.get(face.vertexIndices[1]);
+//            Point3D p3 = vertices.get(face.vertexIndices[2]);
+            Point3D p1 = convertTo3D(vertices.get(face.vertexIndices[0]));
+            Point3D p2 = convertTo3D(vertices.get(face.vertexIndices[1]));
+            Point3D p3 = convertTo3D(vertices.get(face.vertexIndices[2]));
+
             Triangle triangle = new Triangle(p1, p2, p3);
             if (isIntersecting(line, triangle)) {
                 intersecting.add(face);
@@ -299,8 +313,47 @@ public class Main {
     }
 
     // 6. Compute the Normal of a Triangle in 3D
+    public static Point3D computeTriangleNormal(Point3D p1, Point3D p2, Point3D p3) {
+        Point3D v1 = subtract(p2, p1);
+        Point3D v2 = subtract(p3, p1);
+
+        // Compute the cross product of v1 and v2
+        double normalX = v1.y * v2.z - v1.z * v2.y;
+        double normalY = v1.z * v2.x - v1.x * v2.z;
+        double normalZ = v1.x * v2.y - v1.y * v2.x;
+
+        // Normalize the result to get the normal vector
+        double length = Math.sqrt(normalX * normalX + normalY * normalY + normalZ * normalZ);
+        Point3D normal = new Point3D(normalX / length, normalY / length, normalZ / length);
+
+        return normal;
+    }
 
     // 7. Compute the Angle between Two Lines in 3D
+    public static double computeAngleBetweenLines(Line line1, Line line2) {
+        // Compute the dot product of the direction vectors
+        double dotProduct = dotProduct(line1.direction, line2.direction);
+
+        // Compute the magnitudes of the direction vectors
+        double magnitude1 = magnitude(line1.direction);
+        double magnitude2 = magnitude(line2.direction);
+
+        // Compute the cosine of the angle between the lines
+        double cosineAngle = dotProduct / (magnitude1 * magnitude2);
+
+        // Compute the angle in radians
+        double angleInRadians = Math.acos(cosineAngle);
+
+        // Convert the angle to degrees
+        double angleInDegrees = Math.toDegrees(angleInRadians);
+
+        return angleInDegrees;
+    }
+
+    private static double magnitude(Point3D vector) {
+        return Math.sqrt(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z);
+    }
+
     // 8. Compute the Illumination for a Triangle in 3D
     // 9. Raytrace an OBJ in 3D to Identify Illumination Intensities over a Screen
     // of Pixels in 2D
@@ -312,9 +365,13 @@ public class Main {
         // Check intersections with OBJ geometry
         for (Face face : faces) {
             // Convert face vertices to Point3D objects
-            Point3D p1 = vertices.get(face.vertexIndices[0]);
-            Point3D p2 = vertices.get(face.vertexIndices[1]);
-            Point3D p3 = vertices.get(face.vertexIndices[2]);
+//            Point3D p1 = vertices.get(face.vertexIndices[0]);
+//            Point3D p2 = vertices.get(face.vertexIndices[1]);
+//            Point3D p3 = vertices.get(face.vertexIndices[2]);
+            Point3D p1 = convertTo3D(vertices.get(face.vertexIndices[0]));
+            Point3D p2 = convertTo3D(vertices.get(face.vertexIndices[1]));
+            Point3D p3 = convertTo3D(vertices.get(face.vertexIndices[2]));
+
 
             // Create triangle from face vertices
             Triangle triangle = new Triangle(p1, p2, p3);
@@ -324,9 +381,24 @@ public class Main {
                 // For simplicity, assume constant intensity for intersected triangles
                 intensity += 1.0;
             }
+
+            // Compute the normal of the triangle //6
+            Point3D normal = computeTriangleNormal(p1, p2, p3);
+
+            // Compute the angle between the ray direction and the normal
+            Line normalLine = new Line(p1, normal);
+            double angle = computeAngleBetweenLines(ray, normalLine);
+
+            // Compute illumination intensity based on angle
+            double illumination = Math.cos(Math.toRadians(angle));
+            intensity += illumination;
         }
 
         return intensity;
+    }
+
+    private static Point3D convertTo3D(Vertex vertex) {
+        return new Point3D(vertex.x, vertex.y, vertex.z);
     }
 
     // 10. Output Screen Pixels as an Image
