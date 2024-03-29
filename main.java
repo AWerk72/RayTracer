@@ -234,11 +234,52 @@ public class Main {
     }
 
     // 6. Compute the Normal of a Triangle in 3D
-
     // 7. Compute the Angle between Two Lines in 3D
+
+
+
+
     // 8. Compute the Illumination for a Triangle in 3D
-    // 9. Raytrace an OBJ in 3D to Identify Illumination Intensities over a Screen
-    // of Pixels in 2D
+    static class Triangle {
+    Point3D p1, p2, p3;
+    Vector3D normal; // Normal vector of the triangle
+
+    public Triangle(Point3D p1, Point3D p2, Point3D p3) {
+        this.p1 = p1;
+        this.p2 = p2;
+        this.p3 = p3;
+        this.normal = calculateNormal();
+    }
+
+    // Calculate the normal vector of the triangle
+    private Vector3D calculateNormal() {
+        Vector3D e1 = new Vector3D(p2.x - p1.x, p2.y - p1.y, p2.z - p1.z);
+        Vector3D e2 = new Vector3D(p3.x - p1.x, p3.y - p1.y, p3.z - p1.z);
+        return e1.crossProduct(e2).normalize();
+    }
+
+    // Compute the illumination intensity at a given point on the triangle
+    public double computeIllumination(Vector3D lightDirection, Vector3D viewDirection, double ambientIntensity, 
+                                      double diffuseIntensity, double specularIntensity, double shininess) {
+        // Ambient component
+        double ambient = ambientIntensity;
+
+        // Diffuse component
+        double diffuse = Math.max(0, normal.dotProduct(lightDirection));
+
+        // Specular component
+        Vector3D reflection = normal.scale(2 * normal.dotProduct(lightDirection)).subtract(lightDirection).normalize();
+        double specular = Math.pow(Math.max(0, reflection.dotProduct(viewDirection)), shininess);
+
+        // Total intensity
+        return ambient + diffuseIntensity * diffuse + specularIntensity * specular;
+    }
+}
+
+    // 9. Raytrace an OBJ in 3D to Identify Illumination Intensities over a Screen of Pixels in 2D
+
+
+
     // 10. Output Screen Pixels as an Image
 
 }
